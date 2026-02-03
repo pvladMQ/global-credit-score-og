@@ -1,0 +1,21 @@
+---
+applications:
+  - name: global-credit-engine
+    memory: 1G
+    instances: 1
+    path: target/global-credit-engine-1.0.0-SNAPSHOT.jar
+    buildpacks:
+      - java_buildpack_offline
+    env:
+      JAVA_OPTS: -Djava.security.egd=file:///dev/urandom
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
+      SPRING_PROFILES_ACTIVE: cloud
+    services:
+      - credit-db      # PostgreSQL service instance
+      - credit-msg     # RabbitMQ service instance
+      - credit-cache   # GemFire/Tanzu Data service instance
+    routes:
+      - route: global-credit-engine.apps.internal
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180

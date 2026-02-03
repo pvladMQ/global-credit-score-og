@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: global-credit-engine
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # RabbitMQ Configuration (overridden by CF service binding)
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  # PostgreSQL Configuration (overridden by CF service binding)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/creditdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+# Server Configuration
+server:
+  port: 8080
+
+# Actuator endpoints for CF health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Application-specific configuration
+credit-engine:
+  queue:
+    name: application-requests
+  cache:
+    region-name: CreditScoreCache
+
+# Logging
+logging:
+  level:
+    com.tanzu.creditengine: DEBUG
+    org.springframework.amqp: INFO
+    org.apache.geode: WARN
+
+---
+# Cloud Foundry Profile
+spring:
+  config:
+    activate:
+      on-profile: cloud
+
+  jpa:
+    hibernate:
+      ddl-auto: update

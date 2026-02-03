@@ -1,0 +1,23 @@
+package com.tanzu.creditengine;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.gemfire.config.annotation.EnableClusterAware;
+
+/**
+ * Global Credit Scoring Engine
+ * 
+ * A demonstration of the "Data Hub" architecture for Tanzu Experience Day.
+ * This application showcases the integration of:
+ * - PostgreSQL for transactional data storage
+ * - RabbitMQ for asynchronous message processing
+ * - VMware Tanzu GemFire for sub-second global data retrieval
+ */
+@SpringBootApplication
+@EnableClusterAware
+public class GlobalCreditEngineApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(GlobalCreditEngineApplication.class, args);
+    }
+}
