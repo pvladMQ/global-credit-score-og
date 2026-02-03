@@ -24,16 +24,20 @@ public class CreditScoreCalculator {
     private final UserFinancialsRepository userFinancialsRepository;
     private final CreditScoreCacheRepository creditScoreCacheRepository;
 
+    private final MetricsService metricsService;
+
     public CreditScoreCalculator(UserFinancialsRepository userFinancialsRepository,
-            CreditScoreCacheRepository creditScoreCacheRepository) {
+            CreditScoreCacheRepository creditScoreCacheRepository,
+            MetricsService metricsService) {
         this.userFinancialsRepository = userFinancialsRepository;
         this.creditScoreCacheRepository = creditScoreCacheRepository;
+        this.metricsService = metricsService;
     }
 
     /**
      * Processes a credit application by performing a "Complex Join" against
      * PostgreSQL,
-     * calculating the credit score, and caching it in GemFire.
+     * calculating the credit score, and caching the result in GemFire.
      * 
      * @param message The credit application message
      * @return The calculated credit score (1-100)
@@ -43,8 +47,11 @@ public class CreditScoreCalculator {
         logger.info("Starting credit score calculation for SSN: {}", message.getSsn());
 
         // Step 1: Perform "Complex Join" - Query PostgreSQL for user financial data
+        long pgStart = System.currentTimeMillis();
         Optional<UserFinancials> financialsOpt = userFinancialsRepository
                 .findWithCompleteFinancialData(message.getSsn());
+        long pgTime = System.currentTimeMillis() - pgStart;
+        metricsService.recordPostgresQuery(pgTime);
 
         UserFinancials financials;
         if (financialsOpt.isPresent()) {
@@ -70,7 +77,11 @@ public class CreditScoreCalculator {
                 calculatedScore,
                 riskLevel,
                 financials.getFullName());
+
+        long gfStart = System.currentTimeMillis();
         creditScoreCacheRepository.save(cachedScore);
+        long gfTime = System.currentTimeMillis() - gfStart;
+        metricsService.recordGemfireQuery(gfTime);
 
         logger.info("Credit score cached in GemFire - SSN: {}, Score: {}, Risk: {}",
                 message.getSsn(), calculatedScore, riskLevel);

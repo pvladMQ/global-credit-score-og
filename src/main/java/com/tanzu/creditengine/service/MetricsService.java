@@ -18,12 +18,20 @@ public class MetricsService {
     private final AtomicLong totalGemfireTimeMs = new AtomicLong(0);
     private final AtomicLong cacheHits = new AtomicLong(0);
     private final AtomicLong cacheMisses = new AtomicLong(0);
+    private final AtomicLong messagesProcessed = new AtomicLong(0);
 
     /**
      * Record a new application submission.
      */
     public void recordApplication() {
         totalApplications.incrementAndGet();
+    }
+
+    /**
+     * Record a successfully processed message from RabbitMQ.
+     */
+    public void recordMessageProcessed() {
+        messagesProcessed.incrementAndGet();
     }
 
     /**
@@ -76,6 +84,10 @@ public class MetricsService {
 
     public long getCacheMisses() {
         return cacheMisses.get();
+    }
+
+    public long getMessagesProcessed() {
+        return messagesProcessed.get();
     }
 
     public double getCacheHitRate() {

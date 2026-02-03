@@ -64,3 +64,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  
+  # Ensure we use the 'credit-db' service by name if auto-reconfiguration logic is ambiguous
+  datasource:
+    url: ${vcap.services.credit-db.credentials.jdbcUrl:jdbc:postgresql://localhost:5432/creditdb}
+    username: ${vcap.services.credit-db.credentials.username:postgres}
+    password: ${vcap.services.credit-db.credentials.password:postgres}

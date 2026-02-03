@@ -156,52 +156,43 @@ public class CreditApplicationController {
             response.put("vcapServices", vcap);
             response.put("cloudFoundry", true);
 
-            // Simple parsing to detect service types
-            if (vcap.contains("postgres") || vcap.contains("p.mysql") || vcap.contains("cleardb")) {
-                Map<String, Object> db = new HashMap<>();
-                db.put("name", "credit-db");
-                db.put("type", "PostgreSQL");
-                db.put("status", "bound");
-                boundServices.add(db);
-            }
-            if (vcap.contains("rabbitmq") || vcap.contains("cloudamqp")) {
-                Map<String, Object> mq = new HashMap<>();
-                mq.put("name", "credit-msg");
-                mq.put("type", "RabbitMQ");
-                mq.put("status", "bound");
-                boundServices.add(mq);
-            }
-            if (vcap.contains("gemfire") || vcap.contains("cloudcache") || vcap.contains("p-cloudcache")) {
-                Map<String, Object> cache = new HashMap<>();
-                cache.put("name", "credit-cache");
-                cache.put("type", "VMware Tanzu GemFire");
-                cache.put("status", "bound");
-                boundServices.add(cache);
-            }
+            // Verify specific service bindings by name
+            checkServiceBinding(vcap, "credit-db", "PostgreSQL", boundServices);
+            checkServiceBinding(vcap, "credit-msg", "RabbitMQ", boundServices);
+            checkServiceBinding(vcap, "credit-cache", "VMware Tanzu GemFire", boundServices);
+
         } else {
             response.put("cloudFoundry", false);
             // Local development - show simulated services
-            Map<String, Object> db = new HashMap<>();
-            db.put("name", "credit-db");
-            db.put("type", "PostgreSQL");
-            db.put("status", "local");
-            boundServices.add(db);
-
-            Map<String, Object> mq = new HashMap<>();
-            mq.put("name", "credit-msg");
-            mq.put("type", "RabbitMQ");
-            mq.put("status", "local");
-            boundServices.add(mq);
-
-            Map<String, Object> cache = new HashMap<>();
-            cache.put("name", "credit-cache");
-            cache.put("type", "VMware Tanzu GemFire");
-            cache.put("status", "local");
-            boundServices.add(cache);
+            addLocalService("credit-db", "PostgreSQL", boundServices);
+            addLocalService("credit-msg", "RabbitMQ", boundServices);
+            addLocalService("credit-cache", "VMware Tanzu GemFire", boundServices);
         }
 
         response.put("boundServices", boundServices);
         return ResponseEntity.ok(response);
+    }
+
+    private void checkServiceBinding(String vcap, String name, String type, List<Map<String, Object>> boundServices) {
+        Map<String, Object> service = new HashMap<>();
+        service.put("name", name);
+        service.put("type", type);
+
+        // Simple check if the service name exists in the JSON string
+        if (vcap.contains("\"" + name + "\"")) {
+            service.put("status", "bound");
+        } else {
+            service.put("status", "missing");
+        }
+        boundServices.add(service);
+    }
+
+    private void addLocalService(String name, String type, List<Map<String, Object>> boundServices) {
+        Map<String, Object> service = new HashMap<>();
+        service.put("name", name);
+        service.put("type", type);
+        service.put("status", "local");
+        boundServices.add(service);
     }
 
     /**
@@ -211,6 +202,7 @@ public class CreditApplicationController {
     public ResponseEntity<Map<String, Object>> getMetrics() {
         Map<String, Object> response = new HashMap<>();
         response.put("totalApplications", metricsService.getTotalApplications());
+        response.put("messagesProcessed", metricsService.getMessagesProcessed());
         response.put("avgPostgresTimeMs", Math.round(metricsService.getAveragePostgresTimeMs() * 100.0) / 100.0);
         response.put("avgGemfireTimeMs", Math.round(metricsService.getAverageGemfireTimeMs() * 100.0) / 100.0);
         response.put("cacheHits", metricsService.getCacheHits());

@@ -17,9 +17,12 @@ public class CreditApplicationListener {
     private static final Logger logger = LoggerFactory.getLogger(CreditApplicationListener.class);
 
     private final CreditScoreCalculator creditScoreCalculator;
+    private final MetricsService metricsService;
 
-    public CreditApplicationListener(CreditScoreCalculator creditScoreCalculator) {
+    public CreditApplicationListener(CreditScoreCalculator creditScoreCalculator,
+            MetricsService metricsService) {
         this.creditScoreCalculator = creditScoreCalculator;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -35,6 +38,9 @@ public class CreditApplicationListener {
             // Process the application through the credit score calculator
             // This performs the "Complex Join" and caches the result in GemFire
             creditScoreCalculator.processAndCacheScore(message);
+
+            // Record successful message processing
+            metricsService.recordMessageProcessed();
 
             logger.info("Successfully processed credit application for SSN: {}", message.getSsn());
         } catch (Exception e) {
