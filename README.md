@@ -56,17 +56,43 @@ This application demonstrates the **Data Hub** pattern on **Tanzu Platform for C
 | Service Management | All services managed as Tiles within the Platform |
 | Scalability | Each component scales properly within the foundation |
 
-## 🚀 Deployment to Cloud Foundry
+### Step 1: Initial Setup
 
-### Prerequisites
+Clone the repository and set up the necessary environment variables for GemFire automation:
 
-1. **CF CLI** installed and logged in
-2. **Services available** in your marketplace:
-   - PostgreSQL (e.g., `postgres`, `p.mysql`)
-   - RabbitMQ (e.g., `p.rabbitmq`, `cloudamqp`)
-   - GemFire (e.g., `p-cloudcache`, `tanzu-gemfire`)
+```powershell
+# Clone the repository
+git clone https://github.com/pvladMQ/global-credit-engine.git
+cd global-credit-engine
 
-### Step 1: Create Service Instances
+# Define GemFire Management API credentials
+$GEMFIRE_API_URL = "https://<your-gemfire-mgmt-endpoint>/management/v1"
+$GEMFIRE_USER = "cluster_operator"
+$GEMFIRE_PASSWORD = "your-password"
+```
+
+### Step 2: GemFire Data Hub Setup
+
+The application uses `ClientRegionShortcut.PROXY`, meaning it expects the region to already exist on the server. The application will fail to start if the region is missing.
+
+Run the following command to create the required **PARTITION** region:
+
+```powershell
+# Create the CreditScoreCache region
+curl.exe -k -X POST "$GEMFIRE_API_URL/regions" -u "$GEMFIRE_USER:$GEMFIRE_PASSWORD" -H "Content-Type: application/json" -d "{\"name`":`"CreditScoreCache`",`"type`":`"PARTITION`"}"
+```
+
+#### Verify Region Creation
+Verify the region exists before starting the Spring Boot application:
+
+```powershell
+# List regions to verify
+curl.exe -k -u "$GEMFIRE_USER:$GEMFIRE_PASSWORD" "$GEMFIRE_API_URL/regions"
+```
+
+### Step 3: Create Service Instances (Cloud Foundry)
+
+If deploying to Tanzu Platform for Cloud Foundry, ensure the services are created and bound:
 
 ```bash
 # Create PostgreSQL instance
@@ -77,27 +103,9 @@ cf create-service p.rabbitmq standard credit-msg
 
 # Create GemFire/Tanzu Data instance
 cf create-service p-cloudcache standard credit-cache
-
-> [!IMPORTANT]
-> **Manual Action Required**: Platform automation for GemFire regions is disabled to demonstrate `gfsh`.
-> Connect via `gfsh` and run:
-> `create region --name=CreditScoreCache --type=PARTITION`
 ```
 
-> **Note**: Service names and plans may vary by foundation. Check `cf marketplace` for available options.
-
-### Step 2: Build the Application
-
-```bash
-cd global-credit-engine
-mvn clean package -DskipTests
-```
-
-### Step 3: Push to Cloud Foundry
-
-```bash
-cf push
-```
+### Step 4: Build the Application
 
 The `manifest.yml` automatically binds the three services and configures the cloud profile.
 
