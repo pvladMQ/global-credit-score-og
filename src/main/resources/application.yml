@@ -73,3 +73,10 @@ spring:
     url: ${vcap.services.credit-db.credentials.jdbcUrl:jdbc:postgresql://localhost:5432/creditdb}
     username: ${vcap.services.credit-db.credentials.username:postgres}
     password: ${vcap.services.credit-db.credentials.password:postgres}
+
+  # Ensure we use the 'credit-cache' service for Valkey caching
+  data:
+    redis:
+      host: ${vcap.services.credit-cache.credentials.host:localhost}
+      port: ${vcap.services.credit-cache.credentials.port:6379}
+      password: ${vcap.services.credit-cache.credentials.password:}
