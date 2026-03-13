@@ -1,16 +1,16 @@
 package com.tanzu.creditengine.entity;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.gemfire.mapping.annotation.Region;
+import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * GemFire Region model for caching calculated credit scores.
+ * Redis/Valkey model for caching calculated credit scores.
  * This enables sub-second global retrieval of credit scores.
  */
-@Region("CreditScoreCache")
+@RedisHash("CreditScoreCache")
 public class CreditScoreCache implements Serializable {
 
     private static final long serialVersionUID = 1L;

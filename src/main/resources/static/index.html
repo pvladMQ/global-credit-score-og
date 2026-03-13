@@ -179,7 +179,7 @@
             background: linear-gradient(90deg, #DC3545 0%, #C82333 100%);
         }
 
-        .latency-gemfire {
+        .latency-valkey {
             background: linear-gradient(90deg, var(--tanzu-teal) 0%, #00A89D 100%);
         }
 
@@ -277,8 +277,8 @@
                             </div>
                             <div class="col-md-2 col-6">
                                 <div class="metric-card">
-                                    <div class="metric-value text-success" id="avgGemfire">0<small>ms</small></div>
-                                    <div class="metric-label">Avg GemFire</div>
+                                    <div class="metric-value text-success" id="avgValkey">0<small>ms</small></div>
+                                    <div class="metric-label">Avg Valkey</div>
                                 </div>
                             </div>
                             <div class="col-md-2 col-6">
@@ -382,7 +382,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-database me-2"></i>Cached Scores from GemFire</span>
+                        <span><i class="bi bi-database me-2"></i>Cached Scores from Valkey</span>
                         <div>
                             <button class="btn btn-sm btn-light me-2" onclick="loadCachedScores()">
                                 <i class="bi bi-arrow-clockwise me-1"></i>Fetch Latest Scores
@@ -486,7 +486,7 @@
                     document.getElementById('msgsProcessed').textContent = data.messagesProcessed || 0;
                 }
                 document.getElementById('avgPostgres').innerHTML = (data.avgPostgresTimeMs || 0) + '<small>ms</small>';
-                document.getElementById('avgGemfire').innerHTML = (data.avgGemfireTimeMs || 0) + '<small>ms</small>';
+                document.getElementById('avgValkey').innerHTML = (data.avgValkeyTimeMs || 0) + '<small>ms</small>';
                 document.getElementById('speedupRatio').innerHTML = (data.speedupRatio || 0) + '<small>x</small>';
                 document.getElementById('cacheHits').textContent = data.cacheHits || 0;
                 if (document.getElementById('cacheHitRate')) {

@@ -1,17 +1,17 @@
 package com.tanzu.creditengine.repository;
 
 import com.tanzu.creditengine.entity.CreditScoreCache;
-import org.springframework.data.gemfire.repository.GemfireRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 /**
- * GemFire Repository for CreditScoreCache region.
+ * Valkey/Redis Repository for CreditScoreCache.
  * Provides sub-second access to cached credit scores.
  */
 @Repository
-public interface CreditScoreCacheRepository extends GemfireRepository<CreditScoreCache, String> {
+public interface CreditScoreCacheRepository extends CrudRepository<CreditScoreCache, String> {
 
     /**
      * Find cached score by SSN.

@@ -19,9 +19,9 @@ public class MetricsService {
 
     private final AtomicLong totalApplications = new AtomicLong(0);
     private final AtomicLong totalPostgresQueries = new AtomicLong(0);
-    private final AtomicLong totalGemfireQueries = new AtomicLong(0);
+    private final AtomicLong totalValkeyQueries = new AtomicLong(0);
     private final AtomicLong totalPostgresTimeMs = new AtomicLong(0);
-    private final AtomicLong totalGemfireTimeMs = new AtomicLong(0);
+    private final AtomicLong totalValkeyTimeMs = new AtomicLong(0);
     private final AtomicLong cacheHits = new AtomicLong(0);
     private final AtomicLong cacheMisses = new AtomicLong(0);
     private final AtomicLong messagesProcessed = new AtomicLong(0);
@@ -54,11 +54,11 @@ public class MetricsService {
     }
 
     /**
-     * Record a GemFire query with its execution time.
+     * Record a Valkey/Redis query with its execution time.
      */
-    public void recordGemfireQuery(long timeMs) {
-        totalGemfireQueries.incrementAndGet();
-        totalGemfireTimeMs.addAndGet(timeMs);
+    public void recordValkeyQuery(long timeMs) {
+        totalValkeyQueries.incrementAndGet();
+        totalValkeyTimeMs.addAndGet(timeMs);
     }
 
     /**
@@ -84,9 +84,9 @@ public class MetricsService {
         return queries > 0 ? (double) totalPostgresTimeMs.get() / queries : 0;
     }
 
-    public double getAverageGemfireTimeMs() {
-        long queries = totalGemfireQueries.get();
-        return queries > 0 ? (double) totalGemfireTimeMs.get() / queries : 0;
+    public double getAverageValkeyTimeMs() {
+        long queries = totalValkeyQueries.get();
+        return queries > 0 ? (double) totalValkeyTimeMs.get() / queries : 0;
     }
 
     public long getCacheHits() {
@@ -126,7 +126,7 @@ public class MetricsService {
 
     public double getSpeedupRatio() {
         double pgAvg = getAveragePostgresTimeMs();
-        double gfAvg = getAverageGemfireTimeMs();
-        return gfAvg > 0 ? pgAvg / gfAvg : 0;
+        double vbAvg = getAverageValkeyTimeMs();
+        return vbAvg > 0 ? pgAvg / vbAvg : 0;
     }
 }

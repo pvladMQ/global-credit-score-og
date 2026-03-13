@@ -12,6 +12,7 @@ applications:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
       SPRING_PROFILES_ACTIVE: cloud
     # Services (credit-db, credit-msg, credit-cache) are bound manually during the demo
+    # Note: credit-cache is bound to a Valkey instance
     # Random route ensures a unique public URL (e.g., global-credit-engine-brave-lion-xs.cfapps.io)
     random-route: true
     health-check-type: http

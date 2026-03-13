@@ -16,7 +16,7 @@ import java.util.Random;
 
 /**
  * Service that calculates credit scores using data from PostgreSQL
- * and caches the results in GemFire for sub-second retrieval.
+ * and caches the results in Valkey/Redis for sub-second retrieval.
  */
 @Service
 public class CreditScoreCalculator {
@@ -40,7 +40,7 @@ public class CreditScoreCalculator {
     /**
      * Processes a credit application by performing a "Complex Join" against
      * PostgreSQL,
-     * calculating the credit score, and caching the result in GemFire.
+     * calculating the credit score, and caching the result in Valkey.
      * 
      * @param message The credit application message
      * @return The calculated credit score (1-100)
@@ -82,22 +82,22 @@ public class CreditScoreCalculator {
         financials.setRiskLevel(riskLevel);
         userFinancialsRepository.save(financials);
 
-        // Step 3: Cache the result in GemFire for sub-second global retrieval
+        // Step 3: Cache the result in Valkey/Redis for sub-second global retrieval
         CreditScoreCache cachedScore = new CreditScoreCache(
                 message.getSsn(),
                 calculatedScore,
                 riskLevel,
                 financials.getFullName());
 
-        long gfStart = System.currentTimeMillis();
+        long vbStart = System.currentTimeMillis();
         creditScoreCacheRepository.save(cachedScore);
-        long gfTime = System.currentTimeMillis() - gfStart;
+        long vbTime = System.currentTimeMillis() - vbStart;
 
         // Record metrics only if entire transaction succeeds vs "Ghost" updates
         metricsService.recordPostgresQuery(pgTime);
-        metricsService.recordGemfireQuery(gfTime);
+        metricsService.recordValkeyQuery(vbTime);
 
-        logger.info("Credit score cached in GemFire - SSN: {}, Score: {}, Risk: {}",
+        logger.info("Credit score cached in Valkey - SSN: {}, Score: {}, Risk: {}",
                 message.getSsn(), calculatedScore, riskLevel);
 
         return calculatedScore;
@@ -170,7 +170,7 @@ public class CreditScoreCalculator {
     }
 
     /**
-     * Retrieves a cached credit score from GemFire.
+     * Retrieves a cached credit score from Valkey/Redis.
      * 
      * @param ssn The SSN to look up
      * @return The cached credit score, or null if not found

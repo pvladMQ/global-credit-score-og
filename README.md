@@ -45,14 +45,14 @@ This application demonstrates the **Data Hub** pattern on **Tanzu Platform for C
 
 1. **PostgreSQL (Tile)**: Managed relational database service storing source-of-truth financial records
 2. **RabbitMQ (Tile)**: Native message broker decoupling ingestion from processing
-3. **Tanzu GemFire (Tile)**: High-speed in-memory data grid caching calculations for sub-second access
+3. **Valkey (Tile)**: High-speed in-memory data grid caching calculations for sub-second access
 
 ### Why This Matters
 
 | Challenge | Solution |
 |-----------|----------|
 | Complex joins are slow | Offload to async processing layer |
-| Real-time score lookups needed | Cache in GemFire for < 10ms response |
+| Real-time score lookups needed | Cache in Valkey for < 10ms response |
 | Service Management | All services managed as Tiles within the Platform |
 | Scalability | Each component scales properly within the foundation |
 
@@ -65,43 +65,9 @@ This application demonstrates the **Data Hub** pattern on **Tanzu Platform for C
 3. **Services available** in your marketplace:
    - PostgreSQL (e.g., `postgres`, `p.mysql`)
    - RabbitMQ (e.g., `p.rabbitmq`, `cloudamqp`)
-   - GemFire (e.g., `p-cloudcache`, `tanzu-gemfire`)
+   - Valkey (e.g., `valkey`, `redis`)
 
-### Step 1: Initial Setup
-
-Clone the repository and set up the necessary environment variables for GemFire automation:
-
-```powershell
-# Clone the repository
-git clone https://github.com/pvladMQ/global-credit-engine.git
-cd global-credit-engine
-
-# Define GemFire Management API credentials
-$GEMFIRE_API_URL = "https://<your-gemfire-mgmt-endpoint>/management/v1"
-$GEMFIRE_USER = "cluster_operator"
-$GEMFIRE_PASSWORD = "your-password"
-```
-
-### Step 2: GemFire Data Hub Setup
-
-The application uses `ClientRegionShortcut.PROXY`, meaning it expects the region to already exist on the server. The application will fail to start if the region is missing.
-
-Run the following command to create the required **PARTITION** region:
-
-```powershell
-# Create the CreditScoreCache region
-curl.exe -k -X POST "$GEMFIRE_API_URL/regions" -u "$GEMFIRE_USER:$GEMFIRE_PASSWORD" -H "Content-Type: application/json" -d "{\"name`":`"CreditScoreCache`",`"type`":`"PARTITION`"}"
-```
-
-#### Verify Region Creation
-Verify the region exists before starting the Spring Boot application:
-
-```powershell
-# List regions to verify
-curl.exe -k -u "$GEMFIRE_USER:$GEMFIRE_PASSWORD" "$GEMFIRE_API_URL/regions"
-```
-
-### Step 3: Create Service Instances (Cloud Foundry)
+### Step 2: Create Service Instances (Cloud Foundry)
 
 If deploying to Tanzu Platform for Cloud Foundry, ensure the services are created and bound:
 
@@ -112,8 +78,8 @@ cf create-service postgres standard credit-db
 # Create RabbitMQ instance
 cf create-service p.rabbitmq standard credit-msg
 
-# Create GemFire/Tanzu Data instance
-cf create-service p-cloudcache standard credit-cache
+# Create Valkey instance
+cf create-service valkey standard credit-cache
 ```
 
 > **Note**: Service names and plans may vary by foundation. Check `cf marketplace` for available options.
@@ -166,7 +132,7 @@ curl -X POST https://global-credit-engine.<your-cf-domain>/api/apply \
 }
 ```
 
-### Retrieve Credit Score (from GemFire Cache)
+### Retrieve Credit Score (from Valkey Cache)
 
 ```bash
 curl https://global-credit-engine.<your-cf-domain>/api/score/123-45-6789
@@ -181,7 +147,7 @@ curl https://global-credit-engine.<your-cf-domain>/api/score/123-45-6789
   "calculatedScore": 78,
   "riskLevel": "MEDIUM_RISK",
   "calculatedAt": "2026-02-03T12:30:45",
-  "source": "GemFire Cache (sub-second retrieval)"
+  "source": "Valkey Cache (sub-second retrieval)"
 }
 ```
 
@@ -208,9 +174,14 @@ docker run -d --name credit-postgres \
 docker run -d --name credit-rabbitmq \
   -p 5672:5672 -p 15672:15672 \
   rabbitmq:3-management
+
+# Valkey
+docker run -d --name credit-valkey \
+  -p 6379:6379 \
+  valkey/valkey
 ```
 
-> **Note**: For local GemFire, you'll need a local cluster or mock the repository.
+> **Note**: This setup uses local Docker containers for the backing services.
 
 ### Run the Application
 
@@ -256,11 +227,10 @@ global-credit-engine/
     ├── java/com/tanzu/creditengine/
     │   ├── GlobalCreditEngineApplication.java
     │   ├── config/
-    │   │   ├── GemFireConfig.java   # GemFire region setup
     │   │   └── RabbitMQConfig.java  # Queue configuration
     │   ├── entity/
     │   │   ├── UserFinancials.java  # JPA Entity (PostgreSQL)
-    │   │   └── CreditScoreCache.java # GemFire Region model
+    │   │   └── CreditScoreCache.java # Valkey/Redis Hash model
     │   ├── repository/
     │   │   ├── UserFinancialsRepository.java
     │   │   └── CreditScoreCacheRepository.java

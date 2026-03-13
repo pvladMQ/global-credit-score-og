@@ -12,6 +12,12 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  # Redis/Valkey Configuration (overridden by CF service binding)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   # RabbitMQ Configuration (overridden by CF service binding)
   rabbitmq:
     host: localhost
@@ -44,15 +50,12 @@ management:
 credit-engine:
   queue:
     name: application-requests
-  cache:
-    region-name: CreditScoreCache
 
 # Logging
 logging:
   level:
     com.tanzu.creditengine: DEBUG
     org.springframework.amqp: INFO
-    org.apache.geode: WARN
 
 ---
 # Cloud Foundry Profile

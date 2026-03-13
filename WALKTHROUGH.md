@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully created a **Spring Boot 3.x Maven project** demonstrating the "Data Hub" architecture for Tanzu Experience Day. The application integrates PostgreSQL, RabbitMQ, and VMware Tanzu GemFire.
+Successfully created a **Spring Boot 3.x Maven project** demonstrating the "Data Hub" architecture for Tanzu Experience Day. The application integrates PostgreSQL, RabbitMQ, and Valkey.
 
 ## Project Structure
 
@@ -14,11 +14,10 @@ global-credit-engine/
 └── src/main/java/com/tanzu/creditengine/
     ├── GlobalCreditEngineApplication.java
     ├── config/
-    │   ├── GemFireConfig.java
     │   └── RabbitMQConfig.java
     ├── entity/
     │   ├── UserFinancials.java      # JPA Entity (PostgreSQL)
-    │   └── CreditScoreCache.java    # GemFire Region model
+    │   └── CreditScoreCache.java    # Valkey/Redis model
     ├── repository/
     │   ├── UserFinancialsRepository.java
     │   └── CreditScoreCacheRepository.java
@@ -38,7 +37,7 @@ global-credit-engine/
 | File | Purpose |
 |------|---------|
 | [UserFinancials.java](src/main/java/com/tanzu/creditengine/entity/UserFinancials.java) | JPA Entity with SSN, creditHistoryScore, criminalRecord, riskLevel |
-| [CreditScoreCache.java](src/main/java/com/tanzu/creditengine/entity/CreditScoreCache.java) | GemFire region for cached scores |
+| [CreditScoreCache.java](src/main/java/com/tanzu/creditengine/entity/CreditScoreCache.java) | Valkey/Redis Hash for cached scores |
 
 ### Messaging
 | File | Purpose |
@@ -50,13 +49,13 @@ global-credit-engine/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/apply` | POST | Submits credit application to RabbitMQ queue |
-| `/api/score/{ssn}` | GET | Retrieves cached score from GemFire |
+| `/api/score/{ssn}` | GET | Retrieves cached score from Valkey |
 | `/api/health` | GET | Health check endpoint |
 
 ### Cloud Foundry
 | File | Services Bound |
 |------|----------------|
-| [manifest.yml](manifest.yml) | `credit-db` (PostgreSQL), `credit-msg` (RabbitMQ), `credit-cache` (GemFire) |
+| [manifest.yml](manifest.yml) | `credit-db` (PostgreSQL), `credit-msg` (RabbitMQ), `credit-cache` (Valkey) |
 
 ## The Data Hub Workflow
 
@@ -67,7 +66,7 @@ sequenceDiagram
     participant MQ as RabbitMQ
     participant Listener as @RabbitListener
     participant PG as PostgreSQL
-    participant GF as GemFire
+    participant VB as Valkey
 
     Client->>REST: POST /apply {ssn, fullName, ...}
     REST->>MQ: Send to application-requests queue
@@ -77,11 +76,11 @@ sequenceDiagram
     Listener->>PG: Complex Join query
     PG-->>Listener: UserFinancials data
     Listener->>Listener: Calculate score (1-100)
-    Listener->>GF: Cache CreditScoreCache
+    Listener->>VB: Cache CreditScoreCache
     
     Client->>REST: GET /score/{ssn}
-    REST->>GF: Lookup by SSN
-    GF-->>REST: CreditScoreCache (sub-second)
+    REST->>VB: Lookup by SSN
+    VB-->>REST: CreditScoreCache (sub-second)
     REST-->>Client: Score + riskLevel
 ```
 

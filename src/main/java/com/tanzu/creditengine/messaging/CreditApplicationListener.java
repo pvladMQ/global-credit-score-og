@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * RabbitMQ listener that processes credit applications from the queue.
  * This listener picks up messages, performs the Complex Join simulation,
- * calculates the credit score, and caches it in GemFire.
+ * calculates the credit score, and caches it in Valkey/Redis.
  */
 @Component
 public class CreditApplicationListener {
@@ -38,7 +38,7 @@ public class CreditApplicationListener {
 
         try {
             // Process the application through the credit score calculator
-            // This performs the "Complex Join" and caches the result in GemFire
+            // This performs the "Complex Join" and caches the result in Valkey/Redis
             creditScoreCalculator.processAndCacheScore(message);
 
             // Record successful message processing

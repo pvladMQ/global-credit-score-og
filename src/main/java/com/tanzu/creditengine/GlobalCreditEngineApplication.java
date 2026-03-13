@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * This application showcases the integration of:
  * - PostgreSQL for transactional data storage
  * - RabbitMQ for asynchronous message processing
- * - VMware Tanzu GemFire for sub-second global data retrieval
+ * - Valkey (Redis) for sub-second global data retrieval
  */
 @SpringBootApplication
 public class GlobalCreditEngineApplication {

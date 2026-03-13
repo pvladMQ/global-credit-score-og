@@ -81,7 +81,7 @@ public class CreditApplicationController {
     }
 
     /**
-     * Retrieves a cached credit score from GemFire.
+     * Retrieves a cached credit score from Valkey/Redis.
      */
     @GetMapping("/score/{ssn}")
     public ResponseEntity<Map<String, Object>> getScore(@PathVariable String ssn) {
@@ -89,8 +89,8 @@ public class CreditApplicationController {
 
         long startTime = System.currentTimeMillis();
         CreditScoreCache cachedScore = scoreCalculator.getCachedScore(ssn);
-        long gemfireTime = System.currentTimeMillis() - startTime;
-        metricsService.recordGemfireQuery(gemfireTime);
+        long vbTime = System.currentTimeMillis() - startTime;
+        metricsService.recordValkeyQuery(vbTime);
 
         if (cachedScore == null) {
             metricsService.recordCacheMiss();
@@ -110,18 +110,18 @@ public class CreditApplicationController {
         response.put("calculatedScore", cachedScore.getCalculatedScore());
         response.put("riskLevel", cachedScore.getRiskLevel());
         response.put("calculatedAt", cachedScore.getCalculatedAt());
-        response.put("source", "GemFire Cache (sub-second retrieval)");
-        response.put("queryTimeMs", gemfireTime);
+        response.put("source", "Valkey Cache (sub-second retrieval)");
+        response.put("queryTimeMs", vbTime);
 
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Get all cached scores from GemFire.
+     * Get all cached scores from Valkey/Redis.
      */
     @GetMapping("/scores")
     public ResponseEntity<Map<String, Object>> getAllScores() {
-        logger.info("Retrieving all cached scores from GemFire");
+        logger.info("Retrieving all cached scores from Valkey");
 
         long startTime = System.currentTimeMillis();
         List<CreditScoreCache> scores = new ArrayList<>();
@@ -133,7 +133,7 @@ public class CreditApplicationController {
         response.put("count", scores.size());
         response.put("scores", scores);
         response.put("queryTimeMs", queryTime);
-        response.put("source", "GemFire Cache");
+        response.put("source", "Valkey Cache");
 
         return ResponseEntity.ok(response);
     }
@@ -159,20 +159,20 @@ public class CreditApplicationController {
                 // Check for services by looking through all service types
                 checkServiceInJson(root, "credit-db", "PostgreSQL", boundServices);
                 checkServiceInJson(root, "credit-msg", "RabbitMQ", boundServices);
-                checkServiceInJson(root, "credit-cache", "VMware Tanzu GemFire", boundServices);
+                checkServiceInJson(root, "credit-cache", "Valkey (Redis)", boundServices);
 
             } catch (Exception e) {
                 logger.error("Error parsing VCAP_SERVICES, falling back to string check", e);
                 boundServices.clear(); // Clear potentially partial results
                 checkServiceBindingFallback(vcap, "credit-db", "PostgreSQL", boundServices);
                 checkServiceBindingFallback(vcap, "credit-msg", "RabbitMQ", boundServices);
-                checkServiceBindingFallback(vcap, "credit-cache", "VMware Tanzu GemFire", boundServices);
+                checkServiceBindingFallback(vcap, "credit-cache", "Valkey (Redis)", boundServices);
             }
         } else {
             response.put("cloudFoundry", false);
             addLocalService("credit-db", "PostgreSQL", boundServices);
             addLocalService("credit-msg", "RabbitMQ", boundServices);
-            addLocalService("credit-cache", "VMware Tanzu GemFire", boundServices);
+            addLocalService("credit-cache", "Valkey (Redis)", boundServices);
         }
 
         response.put("boundServices", boundServices);
@@ -237,7 +237,7 @@ public class CreditApplicationController {
         response.put("totalApplications", metricsService.getTotalApplications());
         response.put("messagesProcessed", metricsService.getMessagesProcessed());
         response.put("avgPostgresTimeMs", Math.round(metricsService.getAveragePostgresTimeMs() * 100.0) / 100.0);
-        response.put("avgGemfireTimeMs", Math.round(metricsService.getAverageGemfireTimeMs() * 100.0) / 100.0);
+        response.put("avgValkeyTimeMs", Math.round(metricsService.getAverageValkeyTimeMs() * 100.0) / 100.0);
         response.put("cacheHits", metricsService.getCacheHits());
         response.put("cacheMisses", metricsService.getCacheMisses());
         response.put("messagesProcessed", metricsService.getMessagesProcessed());
@@ -248,7 +248,7 @@ public class CreditApplicationController {
     }
 
     /**
-     * Latency comparison test - Postgres vs GemFire.
+     * Latency comparison test - Postgres vs Valkey.
      */
     @GetMapping("/latency-test/{ssn}")
     public ResponseEntity<Map<String, Object>> latencyTest(@PathVariable String ssn) {
@@ -264,22 +264,22 @@ public class CreditApplicationController {
         long pgTime = System.currentTimeMillis() - pgStart;
         metricsService.recordPostgresQuery(pgTime);
 
-        // Query GemFire (sub-second, typically < 10ms)
-        long gfStart = System.currentTimeMillis();
-        CreditScoreCache gfResult = scoreCalculator.getCachedScore(ssn);
-        long gfTime = System.currentTimeMillis() - gfStart;
-        metricsService.recordGemfireQuery(gfTime);
+        // Query Valkey (sub-second, typically < 10ms)
+        long vbStart = System.currentTimeMillis();
+        CreditScoreCache vbResult = scoreCalculator.getCachedScore(ssn);
+        long vbTime = System.currentTimeMillis() - vbStart;
+        metricsService.recordValkeyQuery(vbTime);
 
         response.put("ssn", ssn);
         response.put("postgresTimeMs", pgTime);
-        response.put("gemfireTimeMs", gfTime);
-        response.put("speedup", pgTime > 0 && gfTime > 0 ? Math.round((double) pgTime / gfTime * 10.0) / 10.0 : 0);
+        response.put("valkeyTimeMs", vbTime);
+        response.put("speedup", pgTime > 0 && vbTime > 0 ? Math.round((double) pgTime / vbTime * 10.0) / 10.0 : 0);
         response.put("postgresFound", pgResult.isPresent());
-        response.put("gemfireFound", gfResult != null);
+        response.put("valkeyFound", vbResult != null);
 
-        if (gfResult != null) {
-            response.put("cachedScore", gfResult.getCalculatedScore());
-            response.put("riskLevel", gfResult.getRiskLevel());
+        if (vbResult != null) {
+            response.put("cachedScore", vbResult.getCalculatedScore());
+            response.put("riskLevel", vbResult.getRiskLevel());
         }
 
         return ResponseEntity.ok(response);
